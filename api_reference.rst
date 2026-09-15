@@ -603,16 +603,16 @@ Pony fully supports composite keys. In order to declare a composite primary key 
         b = Required(str)
         PrimaryKey(a, b)
 
-In order to declare a secondary composite key you need to declare attributes as usual and then combine them using the ``composite_key`` directive:
+In order to declare a secondary composite key you need to declare attributes as usual and then combine them using the ``unique`` directive:
 
 .. code-block:: python
 
     class Example(db.Entity):
         a = Required(str)
         b = Optional(int)
-        composite_key(a, b)
+        unique(a, b)
 
-In the database ``composite_key(a, b)`` will be represented as the ``UNIQUE ("a", "b")`` constraint.
+In the database ``unique(a, b)`` will be represented as the ``UNIQUE ("a", "b")`` constraint. The older name ``composite_key()`` is kept as a deprecated alias and behaves the same way. An explicit constraint name can be passed with the ``name`` option: ``unique(a, b, name="unq_example_a_b")``.
 
 
 .. _composite_indexes:
@@ -631,7 +631,9 @@ Using the ``composite_index()`` directive you can create a composite index for s
 
 The composite index can include a discriminator attribute used for inheritance.
 
-Using the ``composite_index()`` you can create a non-unique index. In order to define an unique index, use the ``composite_key()`` function described above.
+Using the ``composite_index()`` you can create a non-unique index. In order to define an unique index, use the ``unique()`` function described above.
+
+An index can be given an explicit name with the ``name`` option: ``composite_index(a, b, name="idx_example_a_b")``. On PostgreSQL, ``composite_index()`` and ``unique()`` also support ``using`` (index method), ``where`` (partial index), ``include`` (covering columns), ``desc()`` (column order), ``raw_sql()`` (expression index) and ``nulls_not_distinct`` (unique only). See the ``entities`` chapter for details.
 
 
 
