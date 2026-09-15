@@ -358,13 +358,15 @@ There is no need in the parameter ``create_db`` when creating an in-memory datab
 PostgreSQL
 ~~~~~~~~~~
 
-Pony uses psycopg2 driver in order to work with PostgreSQL. In order to bind the ``Database`` object to PostgreSQL use the following line:
+Pony uses the psycopg (psycopg3) driver in order to work with PostgreSQL. In order to bind the ``Database`` object to PostgreSQL use the following line:
 
 .. code-block:: python
 
     db.bind(provider='postgres', user='', password='', host='', database='')
 
-All the parameters that follow the Pony database provider name will be passed to the ``psycopg2.connect()`` method. Check the `psycopg2.connect documentation <http://initd.org/psycopg/docs/module.html#psycopg2.connect>`_ in order to learn what other parameters you can pass to this method.
+All the parameters that follow the Pony database provider name will be passed to the ``psycopg.connect()`` method. Check the `psycopg.connect documentation <https://www.psycopg.org/psycopg3/docs/api/connections.html#psycopg.Connection.connect>`_ in order to learn what other parameters you can pass to this method.
+
+.. note:: Starting with the unreleased version after 0.7.20, the PostgreSQL and CockroachDB providers use psycopg (psycopg3) and no longer support psycopg2 or psycopg2cffi. Install ``psycopg`` version 3.1 or newer to use these providers.
 
 .. _mysql:
 
@@ -393,7 +395,7 @@ Pony uses the **cx_Oracle** driver for connecting to Oracle databases. More info
 CockroachDB
 ~~~~~~~~~~~
 
-Pony uses psycopg2 driver in order to work with CockroachDB. In order to bind the ``Database`` object to CockroachDB use the following line:
+Pony uses the psycopg (psycopg3) driver in order to work with CockroachDB. In order to bind the ``Database`` object to CockroachDB use the following line:
 
 .. code-block:: python
 

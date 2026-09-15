@@ -12,10 +12,10 @@ To install Pony, type the following command into the command prompt:
 
 Pony can be installed on Python 2.7 or Python 3. If you are going to work with SQLite database, you don't need to install anything else. If you wish to use another database, you need to have the access to the database and have the corresponding database driver installed:
 
-* PostgreSQL: `psycopg2 <http://initd.org/psycopg/docs/install.html#installation>`_ or `psycopg2cffi <https://pypi.python.org/pypi/psycopg2cffi>`_
+* PostgreSQL: `psycopg (psycopg3) <https://www.psycopg.org/psycopg3/docs/index.html>`_ (version 3.1 or newer)
 * MySQL: `MySQL-python <https://pypi.python.org/pypi/MySQL-python/>`_ or `PyMySQL <https://pypi.python.org/pypi/PyMySQL>`_
 * Oracle: `cx_Oracle <https://pypi.python.org/pypi/cx_Oracle>`_
-* CockroachDB: `psycopg2 <http://initd.org/psycopg/docs/install.html#installation>`_ or `psycopg2cffi <https://pypi.python.org/pypi/psycopg2cffi>`_
+* CockroachDB: `psycopg (psycopg3) <https://www.psycopg.org/psycopg3/docs/index.html>`_ (version 3.1 or newer)
 
 To make sure Pony has been successfully installed, launch a Python interpreter in interactive mode and type:
 
@@ -114,7 +114,7 @@ For SQLite, either the database filename or the string ':memory:' (or ':sharedme
 
 In this case, if the database file does not exist, it will be created. In our example, we can use a database created in-memory.
 
-If you're using another database, you need to have the specific database adapter installed. For PostgreSQL Pony uses psycopg2. For MySQL either MySQLdb or pymysql adapter. For Oracle Pony uses the cx_Oracle adapter.
+If you're using another database, you need to have the specific database adapter installed. For PostgreSQL and CockroachDB Pony uses psycopg (psycopg3). For MySQL either MySQLdb or pymysql adapter. For Oracle Pony uses the cx_Oracle adapter.
 
 Here is how you can get connected to the databases:
 
