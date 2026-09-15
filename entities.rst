@@ -198,7 +198,11 @@ PostgreSQL supports additional index options. All of them raise ``TypeError`` on
 Check constraints
 ~~~~~~~~~~~~~~~~~
 
-You can define a ``CHECK`` constraint by decorating a method of the entity with ``constraint.check``. The method should consist of a single boolean expression over the attributes of the entity; Pony translates this expression to SQL:
+You can define a ``CHECK`` constraint by decorating a method of the entity with ``constraint.check``. The method should consist of a single boolean expression over the attributes of the entity; Pony translates this expression to SQL. The ``constraint`` object is exported from ``pony.orm``:
+
+.. code-block:: python
+
+    from pony.orm import constraint
 
 .. code-block:: python
 
