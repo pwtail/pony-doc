@@ -3,6 +3,29 @@
 Working with entity relationships
 =================================
 
+.. note::
+
+   In async mode a collection is loaded explicitly (``await person.cars``) and after
+   that supports the usual ``for``, ``len()``, ``in`` and indexing. Collection elements
+   come as seeds, so load their attributes explicitly:
+
+   .. code-block:: python
+
+      async with db_session:
+          person = (await select(p for p in Person))[0]
+          await person.cars
+          for car in person.cars:
+              await car.load()
+              print(car.make)
+
+          # many-to-many modification works as well
+          person.groups.add(group)
+          person.groups.remove(group)
+
+   The two rules of async sessions - collections return seeds, and an object with
+   collections must have them loaded before deletion - are described in
+   :ref:`async-mode`, together with the list of features which are still
+   synchronous-only (``prefetch()`` among them).
 In Pony, an entity can relate to other entities through relationship attributes. Each relationship always has two ends, and is defined by two entity attributes:
 
 .. code-block:: python

@@ -1,6 +1,19 @@
 JSON Data Type Support
 ======================
 
+.. note::
+
+   JSON attributes work in both modes. Examples below are written for the synchronous
+   mode; in async mode they run inside ``async with db_session:`` and queries are
+   awaited:
+
+   .. code-block:: python
+
+      async with db_session:
+          products = await select(p for p in Product if p.info['display'] > 5)
+          count = await select(p for p in Product).count()
+
+   See :ref:`async-mode`.
 
 Overview
 --------

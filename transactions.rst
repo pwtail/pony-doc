@@ -3,6 +3,24 @@
 Transactions and db_session
 ===========================
 
+.. note::
+
+   Examples on this page use synchronous transactions. In async mode the session is
+   opened with ``async with db_session:`` and the session parameters (``retry``,
+   ``immediate``, ``serializable``, ``optimistic``) keep their meaning; the transaction
+   is committed when the session ends and rolled back if an exception is raised inside.
+   Explicit control is available too - the same functions return a coroutine:
+
+   .. code-block:: python
+
+      async with db_session:
+          ...
+          await flush()        # send changes to the database
+          await commit()       # or: await rollback()
+
+   There are also explicit ``async_flush`` / ``async_commit`` / ``async_rollback`` names.
+   The ``@db_session`` and ``@transaction`` decorators are synchronous-only - use
+   ``async with db_session:`` in a coroutine. See :ref:`async-mode`.
 A database transaction is a logical unit of work, which can consist of one or several queries. Transactions are atomic, which means that when a transaction makes changes to the database, either all the changes succeed when the transaction is committed, or all the changes are undone when the transaction is rolled back.
 
 Pony provides automatic transaction management using the database session.

@@ -41,6 +41,57 @@ With Pony any developer can write complex and effective queries, even without be
 Starting with the version 0.7, Pony ORM is released under the Apache License, Version 2.0.
 
 
+Synchronous and asynchronous modes
+----------------------------------
+
+Pony supports both a synchronous and an asynchronous programming model. Entity
+declarations, attribute types and the query syntax are the same in both modes;
+only the way the database is accessed differs.
+
+**Synchronous mode** (the default) works with every supported database:
+``sqlite``, ``postgres``, ``mysql``, ``cockroach`` and ``oracle``. Queries are send
+to the database as soon as the result is iterated over, and hidden I/O - such as
+loading a lazy attribute or a collection - is performed when the attribute is
+accessed:
+
+.. code-block:: python
+
+   with db_session:
+       persons = select(p for p in Person if p.age > 20)[:]
+       print(persons[0].bio)          # lazy attribute is loaded here
+
+**Asynchronous mode** works with PostgreSQL (the ``postgres_async`` provider, built
+on psycopg3) and MariaDB / MySQL (the ``mariadb_async`` provider). Database access
+is performed with ``await`` only, so the event loop is never blocked, and nothing
+is loaded behind the scenes - the code that reads from the database is always
+explicit:
+
+.. code-block:: python
+
+   async with db_session:
+       persons = await select(p for p in Person if p.age > 20)
+       person = persons[0]
+       await person.load('bio')       # lazy attribute: explicit load
+       print(person.bio)
+
+Accessing an attribute or a collection that is not loaded yet raises
+:py:class:`NotLoadedError` instead of sending a hidden query; use
+``await obj.load(...)`` for attributes and ``await obj.related_collection`` for
+collections.
+
+Both modes can be used in the same application, but they cannot be mixed inside one
+transaction.
+
+.. warning::
+
+   **Async mode is not a full replacement for the synchronous one yet.** It is available
+   for PostgreSQL (``postgres_async``) and MariaDB / MySQL (``mariadb_async``) only, and
+   the following is still synchronous-only: ``prefetch()``, ``load()`` for reverse
+   attributes without their own columns, lookups by raw composite key values, the
+   ``@db_session`` / ``@transaction`` decorators, and schema operations inside a
+   coroutine. The complete list, with examples, is in :ref:`async-mode`.
+
+
 PonyORM community
 -----------------
 

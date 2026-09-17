@@ -1,6 +1,30 @@
 ﻿Aggregation
 ===========
 
+.. note::
+
+   Aggregate functions work in async mode as well - the aggregate query returns a
+   coroutine:
+
+   .. code-block:: python
+
+      async with db_session:
+          count = await select(s for s in Student if s.group.number == 101).count()
+          average = await select(s.gpa for s in Student).avg()
+          best = await select(s.gpa for s in Student).max()
+
+   The examples below are written in the synchronous form; in async mode the same query
+   is awaited (``await select(...).sum()`` and so on) or used as a plain aggregate over
+   the list returned by ``await select(...)``. Module-level aggregates over a generator
+   also work: ``await count(s for s in Student if s.gpa > 3)``. See :ref:`async-mode`.
+   .. code-block:: python
+
+      async with db_session:
+          students = await select(s for s in Student if s.group.number == 101)
+          average = sum(s.gpa for s in students) / len(students)
+
+   See :ref:`async-mode`.
+
 You can use the following five aggregate functions for declarative queries:  :py:func:`sum`, :py:func:`count`, :py:func:`min`, :py:func:`max`, :py:func:`avg` and :py:func:`group_concat`. Let's see some examples of simple queries using these functions.
 
 Total GPA of students from group 101:

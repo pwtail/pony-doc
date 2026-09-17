@@ -17,5 +17,5 @@ Pony ORM
    json
    array
    api_reference
-   integration_with_flask
+   integration_with_responder
    integration_with_fastapi

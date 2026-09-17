@@ -2510,13 +2510,13 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
         Usually there is no need to prefetch related objects. When you work with the query result within the ``@db_session``, Pony gets all related objects once you need them. Pony uses the most effective way for loading related objects from the database, avoiding the N+1 Query problem.
 
-        So, if you use Flask, the recommended approach is to use the ``@db_session`` decorator at the top level, at the same place where you put the Flask's ``app.route`` decorator:
+        So, if you use a synchronous web framework, the recommended approach is to use the ``@db_session`` decorator at the top level, at the same place where you put the route decorator:
 
         .. code-block:: python
 
-            @app.route('/index')
+            @api.get('/index')
             @db_session
-            def index():
+            def index(req, resp):
                 ...
                 objects = select(...)
                 ...

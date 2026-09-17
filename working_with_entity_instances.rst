@@ -1,6 +1,35 @@
 ﻿Working with entity instances
 =============================
 
+.. note::
+
+   In async mode objects are created, updated and deleted in the same way, inside
+   ``async with db_session:`` - the transaction is committed when the session ends.
+   Reading from the database always requires ``await``:
+
+   .. code-block:: python
+
+      async with db_session:
+          product = Product(name='Product1', price=100)
+          products = await select(p for p in Product if p.price > 100)
+          page = await select(p for p in Product).order_by(Product.price)[:10]
+          product = await Product.get(name='Product1')
+          await product.load('description')      # attribute
+          await product.reviews                  # collection
+
+   Access by primary key is awaited as well - ``await Customer[123]`` (composite keys
+   too: ``await OrderItem[order, product]``). Deleting an object which has collections
+   requires them to be loaded first (``await obj.cars`` and then ``obj.delete()``);
+   bulk deletion does not:
+
+   .. code-block:: python
+
+      async with db_session:
+          await delete(p for p in Product if p.price < 10)
+
+   Still synchronous-only: ``prefetch()``, ``load()`` for reverse attributes without
+   their own columns, the ``@db_session`` decorator, and schema operations (call them
+   outside a coroutine). See :ref:`async-mode`.
 
 Creating an entity instance
 ---------------------------

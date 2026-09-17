@@ -1,6 +1,32 @@
 ﻿Queries
 =======
 
+.. note::
+
+   Examples on this page are written for the synchronous mode. In async mode the same
+   query is executed with ``await`` (the result is a plain list) or iterated with
+   ``async for``, and must run inside an asynchronous session:
+
+   .. code-block:: python
+
+      async with db_session:
+          customers = await select(c for c in Customer if c.age > 18)
+          top = await select(c for c in Customer).order_by(Customer.age)[:10]
+          count = await select(c for c in Customer).count()
+          async for c in Customer.select(lambda c: c.age > 18):
+              print(c.name)
+
+   Available in async mode: aggregates (``await query.count()``, ``sum()``, ``avg()``,
+   ``min()``, ``max()``, ``group_concat()``), ``await query.exists()`` / ``first()`` /
+   ``get()``, slices and pagination (``await query[:10]``, ``await query.limit()``,
+   ``await query.page()``), ``await Entity.get(...)`` / ``Entity.exists(...)`` and
+   ``await delete(...)`` / ``await query.delete(bulk=True)``.
+
+   Access by primary key works too - ``await Entity[pk]`` (the identity map of the
+   session is checked first, then a query is sent; composite keys as well:
+   ``await OrderItem[order, product]``). Still synchronous-only: ``prefetch()``,
+   ``load()`` for reverse attributes without their own columns, and the ``@db_session``
+   decorator. See :ref:`async-mode`.
 Pony provides a very convenient way to query the database using the generator expression syntax. Pony allows programmers to work with objects which are stored in a database as if they were stored in memory, using native Python syntax. It makes development much easier.
 
 For writing queries you can use Python generator expressions or lambdas.

@@ -202,6 +202,9 @@ The code which interacts with the database has to be placed within a database se
         # database session cache will be cleared automatically
         # database connection will be returned to the pool
 
+In asynchronous mode the same session is opened with ``async with db_session:`` and the
+operations inside it are awaited; see :ref:`async-mode` below.
+
 The :py:func:`db_session` decorator performs the following actions on exiting function:
 
 * Performs rollback of transaction if the function raises an exception
@@ -225,6 +228,127 @@ Another option for working with the database is using the :py:func:`db_session` 
         # database connection will be returned to the pool
 
 
+.. _async-mode:
+
+Async mode
+----------
+
+Besides the synchronous mode described above, Pony can work in asynchronous mode,
+which is useful for applications built on top of ``asyncio`` (an aiohttp service, a
+FastAPI application, and so on). Two things are required for it:
+
+* an asynchronous provider - ``postgres_async`` (PostgreSQL via psycopg3) or
+  ``mariadb_async`` (MariaDB / MySQL via the ``mariadb`` connector);
+* ``async with db_session:`` instead of ``with db_session:``, and ``await`` for every
+  operation which reads from or writes to the database.
+
+Database objects created with an asynchronous provider can be used in both ways: they
+support synchronous sessions as well:
+
+.. code-block:: python
+
+    from pony.orm import *
+
+    db = Database('postgres_async', dsn='dbname=mydb user=postgres host=localhost')
+
+    class Person(db.Entity):
+        name = Required(str)
+        age = Required(int)
+        bio = Optional(str, lazy=True)
+        cars = Set('Car')
+
+    db.generate_mapping(create_tables=True)   # schema operations are synchronous
+
+    async def main():
+        async with db_session:                 # flush + commit on exit
+            Person(name='John', age=20, bio='...')
+
+        async with db_session:
+            persons = await select(p for p in Person if p.age > 18)
+            async for p in select(p for p in Person).order_by(Person.name):
+                print(p.name)
+            person = persons[0]
+            await person.load('bio')           # lazy attribute: explicit load
+            print(person.bio)
+
+    import asyncio
+    asyncio.run(main())
+
+:py:meth:`~Database.generate_mapping` and other schema operations are synchronous and
+must be called outside of a coroutine.
+
+Collections are loaded explicitly as well, and after that they behave like ordinary
+Python sequences (``for``, ``len()``, ``in``, indexing):
+
+.. code-block:: python
+
+    async with db_session:
+        person = (await select(p for p in Person))[0]
+        await person.cars                      # load the collection
+        for car in person.cars:
+            print(car.make)
+
+Accessing an attribute or a collection which is not loaded raises
+:py:class:`NotLoadedError` instead of sending a hidden query, so the code that reads
+from the database is always visible. A database session belongs to one task: two
+coroutines running at the same time get separate sessions (and separate connections
+from the pool), and objects of one task are never visible in another one.
+
+**What is available in async mode** — the whole query API is usable, awaited:
+
+.. code-block:: python
+
+    async with db_session:
+        page = await select(p for p in Person).order_by(Person.name)[:10]
+        page = await select(p for p in Person).page(2, pagesize=10)
+        total = await select(p for p in Person).count()
+        oldest = await select(p.age for p in Person).max()
+        found = await select(p for p in Person if p.age > 18).exists()
+        person = await select(p for p in Person).first()
+        person = await Person.get(name='John')
+        person = await Person[1]                    # доступ по первичному ключу
+        name = await get(p.name for p in Person if p.age == 30)
+
+        await delete(p for p in Person if p.age < 18)            # удаление
+        person.cars.add(car); person.cars.remove(car)            # m2m
+
+        await flush()          # явное управление транзакцией тоже доступно
+        await commit()
+        await rollback()
+
+.. warning::
+
+   **Not supported in async mode yet.** The following stays synchronous: called inside an
+   async session it raises :py:class:`TransactionError` with a hint.
+
+   * ``prefetch()``, and ``load()`` for reverse attributes which have no columns of their
+     own;
+   * lookups by raw values of composite primary key columns (``await Entity[pk]`` and
+     ``await Entity.get(...)`` work);
+   * the :py:func:`db_session` and :py:func:`transaction` decorators — use
+     ``async with db_session:`` inside a coroutine;
+   * schema operations (:py:meth:`Database.generate_mapping` and
+     :py:meth:`Database.create_tables`) executed inside a coroutine;
+   * databases other than PostgreSQL and MariaDB / MySQL;
+   * mixing synchronous and asynchronous sessions in one transaction.
+
+.. note::
+
+   Two rules make async sessions different from synchronous ones whenever collections
+   are involved:
+
+   1. **Collections return seeds.** After ``await person.cars`` the elements are loaded
+      only partially (their primary key is known), so load their attributes explicitly:
+      ``for car in person.cars: await car.load()``.
+   2. **Deleting an object which has collections requires loading them first.** In sync
+      mode Pony loads them implicitly, in async mode the code has to do it:
+      ``await person.cars`` and then ``person.delete()``. Bulk deletion
+      (``await delete(...)``) does not need the collections.
+
+Whenever asynchronous code tries to use a synchronous operation, Pony raises
+:py:class:`TransactionError` with a hint instead of performing a blocking call inside
+the event loop.
+
 Writing queries
 ---------------
 
@@ -234,6 +358,9 @@ Now that we have the database with five objects saved in it, we can try some que
 
     >>> select(p for p in Person if p.age > 20)
     <pony.orm.core.Query at 0x105e74d10>
+
+In asynchronous mode the same query is written as ``await select(...)`` (which returns a
+list) or iterated with ``async for``; see :ref:`async-mode` below.
 
 The :py:func:`select` function translates the Python generator into a SQL query and returns an instance of the :py:class:`Query` class. This SQL query will be sent to the database once we start iterating over the query. One of the ways to get the list of objects is to apply the slice operator ``[:]`` to it:
 

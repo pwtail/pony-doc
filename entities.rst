@@ -1,6 +1,11 @@
 Declaring Entities
 ==================
 
+.. note::
+
+   Entity declarations are the same in synchronous and asynchronous mode: only the way
+   the database is accessed differs. See :ref:`async-mode`.
+
 Entities are Python classes which store an object’s state in the database. Each instance of an entity corresponds to a row in the database table. Often entities represent objects from the real world (e.g. Customer, Product).
 
 Before creating entity instances you need to map entities to the database tables. Pony can map entities to existing tables or create new tables. After the mapping is generated you can query the database and create new instances of entities.
@@ -509,7 +514,7 @@ By default, for storing many-to-many relationships between ``Student`` and ``Cou
 
     class Student(db.Entity):
         name = Required(str)
-        courses = Set("Course", table="Study_Plans", columns=["course", "semester"]))
+        courses = Set("Course", table="Study_Plans", columns=["course", "semester"])
 
     class Course(db.Entity):
         name = Required(str)

@@ -1,6 +1,14 @@
 ﻿Connecting to the Database
 ==========================
 
+.. note::
+
+   Everything on this page — :py:meth:`Database.bind`, :py:meth:`Database.generate_mapping`
+   and :py:meth:`Database.select` — is synchronous, and in async applications it is
+   called outside of a coroutine. Asynchronous sessions require an asynchronous provider:
+   ``postgres_async`` (PostgreSQL) or ``mariadb_async`` (MariaDB / MySQL), which support
+   synchronous sessions as well. See :ref:`async-mode`.
+
 Before you can start working with entities you have to create the ``Database`` object. The entities, that you declare in your Python code, will be mapped to the database through this object.
 
 Mapping entities to the database can be divided into four steps:
