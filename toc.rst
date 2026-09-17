@@ -18,4 +18,3 @@ Pony ORM
    array
    api_reference
    integration_with_responder
-   integration_with_fastapi

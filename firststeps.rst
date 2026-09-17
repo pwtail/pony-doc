@@ -235,7 +235,7 @@ Async mode
 
 Besides the synchronous mode described above, Pony can work in asynchronous mode,
 which is useful for applications built on top of ``asyncio`` (an aiohttp service, a
-FastAPI application, and so on). Two things are required for it:
+Responder application, and so on). Two things are required for it:
 
 * an asynchronous provider - ``postgres_async`` (PostgreSQL via psycopg3) or
   ``mariadb_async`` (MariaDB / MySQL via the ``mariadb`` connector);

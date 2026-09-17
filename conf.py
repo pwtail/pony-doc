@@ -220,7 +220,7 @@ htmlhelp_basename = 'ponydoc'
 import alabaster
 
 html_theme_path = [alabaster.get_path()]
-extensions = ['alabaster', 'sphinx.ext.todo']
+extensions = ['alabaster']
 html_theme = 'alabaster'
 html_sidebars = {
     '**': [

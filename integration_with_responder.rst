@@ -202,5 +202,5 @@ Do not mix the two styles inside one transaction: a synchronous ``with db_sessio
 cannot be used inside an asynchronous view, and an asynchronous session requires an
 asynchronous provider (``postgres_async`` or ``mariadb_async``).
 
-The same approach works for other ASGI frameworks - see
-:doc:`integration_with_fastapi`.
+The same approach works with other ASGI frameworks (Starlette, aiohttp, and so on): open
+the asynchronous session with ``async with db_session:`` and ``await`` the queries.

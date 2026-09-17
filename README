@@ -30,5 +30,23 @@ Pony ORM documentation (Sphinx)
 
 Адрес публикации: https://pwtail.github.io/pony-doc/
 
+Если деплой падает с «Branch "dev" is not allowed to deploy to github-pages»
+--------------------------------------------------------------------------
+
+Это ограничение окружения github-pages, а не workflow: по умолчанию деплой в него
+разрешён только с дефолтной/защищённой ветви. Варианты:
+
+1. Разрешить ветвь в настройках (проще всего):
+
+       Settings → Environments → github-pages →
+       Deployment branches and tags → All branches   (или Selected branches + dev)
+
+   Затем перезапустить упавший прогон: Actions → docs → Re-run all jobs.
+2. Либо публиковать из ветви: workflow собирает доки и пушит результат в `gh-pages`,
+   а в Settings → Pages выбирается «Deploy from a branch» → `gh-pages` → `/ (root)`.
+   Ограничения окружения при таком способе не участвуют, но в репозитории появляется
+   ветвь с собранным HTML (и в её корне обязателен `.nojekyll`, иначе Jekyll выбросит
+   каталог `_static` вместе со стилями).
+
 Он же указан в conf.py как html_baseurl. Если репозиторий переименовать, поменяйте
 html_baseurl и, при необходимости, `github_user` / `github_repo` в conf.py.
