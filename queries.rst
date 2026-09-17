@@ -27,6 +27,7 @@
    ``await OrderItem[order, product]``). Still synchronous-only: ``prefetch()``,
    ``load()`` for reverse attributes without their own columns, and the ``@db_session``
    decorator. See :ref:`async-mode`.
+
 Pony provides a very convenient way to query the database using the generator expression syntax. Pony allows programmers to work with objects which are stored in a database as if they were stored in memory, using native Python syntax. It makes development much easier.
 
 For writing queries you can use Python generator expressions or lambdas.

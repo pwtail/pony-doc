@@ -20,6 +20,7 @@ Database class
 
     .. py:method:: bind(provider, *args, **kwargs)
     .. py:method:: bind(*args, **kwargs)
+        :no-index:
 
         Bind entities to a database.
 

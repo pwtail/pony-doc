@@ -21,6 +21,7 @@ Transactions and db_session
    There are also explicit ``async_flush`` / ``async_commit`` / ``async_rollback`` names.
    The ``@db_session`` and ``@transaction`` decorators are synchronous-only - use
    ``async with db_session:`` in a coroutine. See :ref:`async-mode`.
+
 A database transaction is a logical unit of work, which can consist of one or several queries. Transactions are atomic, which means that when a transaction makes changes to the database, either all the changes succeed when the transaction is committed, or all the changes are undone when the transaction is rolled back.
 
 Pony provides automatic transaction management using the database session.

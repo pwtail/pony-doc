@@ -26,6 +26,7 @@ Working with entity relationships
    collections must have them loaded before deletion - are described in
    :ref:`async-mode`, together with the list of features which are still
    synchronous-only (``prefetch()`` among them).
+
 In Pony, an entity can relate to other entities through relationship attributes. Each relationship always has two ends, and is defined by two entity attributes:
 
 .. code-block:: python

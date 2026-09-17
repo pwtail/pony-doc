@@ -1,5 +1,34 @@
-Pony ORM documentation (c) by Pony ORM, LLC
+Pony ORM documentation (Sphinx)
+===============================
 
-Pony ORM documentation is licensed under Apache License Version 2.0
+Сборка локально:
 
-See compiled docs at https://docs.ponyorm.com
+    python -m venv .venv && . .venv/bin/activate
+    pip install -r requirements-docs.txt
+    make html            # результат в _build/html (открывать toc.html)
+    make clean
+
+Строгая сборка (как в CI, предупреждения = ошибки):
+
+    sphinx-build -W --keep-going -b html -d _build/doctrees . _build/html
+
+Публикация на GitHub Pages
+--------------------------
+
+Документация выкладывается workflow'ом `.github/workflows/docs.yml` при пуше в
+`dev` / `master` / `main` (или вручную через Actions → docs → Run workflow).
+Нужно один раз включить Pages в настройках репозитория:
+
+    Settings → Pages → Build and deployment → Source: GitHub Actions
+
+Важно: стартовый workflow GitHub «Static HTML» (.github/workflows/static.yml)
+для этого репозитория НЕ нужен — он публикует содержимое репозитория как есть
+(.rst-исходники, conf.py), а не собранный сайт. Если такой файл появился —
+удалите его, иначе два workflow будут перезаписывать сайт по очереди.
+Собирает и публикует доки только docs.yml (при необходимости его можно
+переименовать в static.yml — содержимое важнее имени).
+
+Адрес публикации: https://pwtail.github.io/pony-doc/
+
+Он же указан в conf.py как html_baseurl. Если репозиторий переименовать, поменяйте
+html_baseurl и, при необходимости, `github_user` / `github_repo` в conf.py.
