@@ -292,7 +292,7 @@ In some mappers (e.g. Django) a query on a base entity doesn’t return the righ
 
 .. code-block:: python
 
-    for p in Person.select():
+    async for p in Person.select():
         if isinstance(p, Professor):
             print p.name, p.degree
         elif isinstance(p, Student):
@@ -554,7 +554,7 @@ You can declare methods and properties inside your entity that you can use in qu
 
         @property
         def cars_price(self):
-            return sum(c.price for c in self.cars)
+            return await sum(c.price for c in self.cars)
             
         
     class Car(db.Entity):
@@ -576,7 +576,7 @@ You can declare methods and properties inside your entity that you can use in qu
         select(p for p in Person if count(p.cars_by_color('yellow')) > 1)
             
         # sum of all cars that have owners
-        sum(p.cars_price for p in Person)
+        await sum(p.cars_price for p in Person)
 
 
 

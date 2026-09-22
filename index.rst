@@ -57,7 +57,7 @@ accessed:
 .. code-block:: python
 
    with db_session:
-       persons = select(p for p in Person if p.age > 20)[:]
+       persons = await select(p for p in Person if p.age > 20)[:]
        print(persons[0].bio)          # lazy attribute is loaded here
 
 **Asynchronous mode** works with PostgreSQL (the ``postgres_async`` provider, built
@@ -82,14 +82,22 @@ collections.
 Both modes can be used in the same application, but they cannot be mixed inside one
 transaction.
 
+.. note::
+
+   **Examples in this documentation are written for the asynchronous mode.** Queries are
+   executed with ``await``; ``select(...)`` itself only builds a query, so it can also be
+   used for further refinement before awaiting. The snippets assume a context where
+   top-level ``await`` works (an ``async def`` body, or IPython / Jupyter), and they are
+   marked with the usual REPL prompt ``>>>`` where the interactive session is meant.
+
 .. warning::
 
-   **Async mode is not a full replacement for the synchronous one yet.** It is available
-   for PostgreSQL (``postgres_async``) and MariaDB / MySQL (``mariadb_async``) only, and
-   the following is still synchronous-only: ``prefetch()``, ``load()`` for reverse
-   attributes without their own columns, lookups by raw composite key values, the
-   ``@db_session`` / ``@transaction`` decorators, and schema operations inside a
-   coroutine. The complete list, with examples, is in :ref:`async-mode`.
+   **Async mode** is available for PostgreSQL (``postgres_async``) and MariaDB / MySQL
+   (``mariadb_async``); other databases are synchronous-only, and schema operations
+   (``generate_mapping``, ``create_tables``) must be called outside a coroutine. For
+   everything else - queries, aggregates, slicing, ``prefetch()``, access by primary key,
+   many-to-many updates, explicit transactions and ``@db_session`` on coroutines - both
+   modes work; see :ref:`async-mode` for the current limitations.
 
 
 PonyORM community

@@ -156,14 +156,14 @@ Database class
 
         .. code-block:: python
 
-            cursor = db.execute("""create table Person (
+            cursor = await db.execute("""create table Person (
                          id integer primary key autoincrement,
                          name text,
                          age integer
                   )""")
 
             name, age = "Ben", 33
-            cursor = db.execute("insert into Person (name, age) values ($name, $age)")
+            cursor = await db.execute("insert into Person (name, age) values ($name, $age)")
 
         See :ref:`Raw SQL <raw_sql>` section for more info.
 
@@ -185,7 +185,7 @@ Database class
         .. code-block:: python
 
             name = 'John'
-            if db.exists("select * from Person where name = $name"):
+            if await db.exists("select * from Person where name = $name"):
                 print "Person exists in the database"
 
 
@@ -225,9 +225,9 @@ Database class
         .. code-block:: python
 
             id = 1
-            age = db.get("select age from Person where id = $id")
+            age = await db.get("select age from Person where id = $id")
 
-            name, age = db.get("select name, age from Person where id = $id")
+            name, age = await db.get("select name, age from Person where id = $id")
 
 
 
@@ -308,7 +308,7 @@ Database class
 
         .. code-block:: python
 
-            for row in db.select("name, age from Person"):
+            for row in await db.select("name, age from Person"):
                 print row.name, row.age
 
 
@@ -453,7 +453,7 @@ Transactions & db_session
     .. code-block:: python
 
         @db_session
-        def check_user(username):
+        async def check_user(username):
             return User.exists(username=username)
 
     As a context manager:
@@ -463,7 +463,7 @@ Transactions & db_session
         def process_request():
             ...
             with db_session:
-                u = User.get(username=username)
+                u = (await User.get(username=username))
                 ...
 
 
@@ -490,7 +490,7 @@ If you want Pony to work with transactions using the SERIALIZABLE isolation leve
 .. code-block:: python
 
     @db_session(serializable=True)
-    def your_function():
+    async def your_function():
         ...
 
 READ COMMITTED vs. SERIALIZABLE mode
@@ -503,7 +503,7 @@ In READ COMMITTED mode, if you want to avoid changing the same data by a concurr
 .. code-block:: python
 
     @db_session(retry=3)
-    def your_function():
+    async def your_function():
         ...
 
 
@@ -1015,8 +1015,8 @@ To-many attributes have methods that provide a convenient way of querying data. 
 
         .. code-block:: python
 
-            >>> p1 = Person[1]
-            >>> Car[1] in p1.cars
+            >>> p1 = await Person[1]
+            >>> await Car[1] in p1.cars
             True
             >>> len(p1.cars)
             2
@@ -1028,7 +1028,7 @@ To-many attributes have methods that provide a convenient way of querying data. 
 
         .. code-block:: python
 
-            photo = Photo[123]
+            photo = await Photo[123]
             photo.tags.add(Tag['Outdoors'])
 
         Now the instance of the ``Photo`` entity with the primary key 123 has a relationship with the ``Tag['Outdoors']`` instance. The attribute ``photos`` of the ``Tag['Outdoors']`` instance contains the reference to the ``Photo[123]`` as well.
@@ -1061,14 +1061,14 @@ To-many attributes have methods that provide a convenient way of querying data. 
 
         .. code-block:: python
 
-            new_tag = Photo[123].tags.create(name='New tag')
+            new_tag = (await Photo[123]).tags.create(name='New tag')
 
         is an equivalent of the following:
 
         .. code-block:: python
 
           new_tag = Tag(name='New tag')
-          Photo[123].tags.add(new_tag)
+          (await Photo[123]).tags.add(new_tag)
 
 
     .. py:method:: drop_table(with_all_data=False)
@@ -1101,7 +1101,7 @@ To-many attributes have methods that provide a convenient way of querying data. 
 
         .. code-block:: python
 
-            g = Group[101]
+            g = await Group[101]
             g.students.filter(lambda student: student.gpa > 3)
 
 
@@ -1146,7 +1146,7 @@ To-many attributes have methods that provide a convenient way of querying data. 
 
         .. code-block:: python
 
-            g = Group[101]
+            g = await Group[101]
             g.students.random(2)
 
 
@@ -1161,7 +1161,7 @@ To-many attributes have methods that provide a convenient way of querying data. 
 
         .. code-block:: python
 
-            g = Group[101]
+            g = await Group[101]
             g.students.select(lambda student: student.gpa > 3)
 
 .. _entity_options:
@@ -1262,7 +1262,7 @@ Each hook method receives the instance of the object to be modified. You can che
     .. code-block:: python
 
         >>> m = Message(title='First message', content='Hello, world!')
-        >>> commit()
+        >>> await commit()
         Before insert! title=First message
 
         INSERT INTO "Message" ("title", "content") VALUES (?, ?)
@@ -1282,7 +1282,7 @@ Entity methods
 
         .. code-block:: python
 
-            p = Product[123]
+            p = await Product[123]
 
         For entities with a composite primary key, use a comma between the primary key values:
 
@@ -1299,7 +1299,7 @@ Entity methods
 
         .. code-block:: python
 
-            Order[123].delete()
+            (await Order[123]).delete()
 
 
     .. py:classmethod:: describe()
@@ -1349,8 +1349,8 @@ Entity methods
 
         .. code-block:: python
 
-            Product.get(price=1000)
-            Product.get(lambda p: p.name.startswith('A'))
+            await Product.get(price=1000)
+            await Product.get(lambda p: p.name.startswith('A'))
 
 
     .. py:classmethod:: get_by_sql(sql, globals=None, locals=None)
@@ -1379,7 +1379,7 @@ Entity methods
 
         .. code-block:: python
 
-            >>> c = Customer[1]
+            >>> c = await Customer[1]
             >>> c.get_pk()
             1
 
@@ -1397,8 +1397,8 @@ Entity methods
 
         .. code-block:: python
 
-            obj.load(Person.biography, Person.some_other_field)
-            obj.load('biography', 'some_other_field')
+            await obj.load(Person.biography, Person.some_other_field)
+            await obj.load('biography', 'some_other_field')
 
 
     .. py:classmethod:: select(lambda=None, **kwargs)
@@ -1449,14 +1449,14 @@ Entity methods
 
         .. code-block:: python
 
-            Customer[123].set(email='new@example.com', address='New address')
+            (await Customer[123]).set(email='new@example.com', address='New address')
 
         This method also can be convenient when you want to assign new values from a dictionary:
 
         .. code-block:: python
 
             d = {'email': 'new@example.com', 'address': 'New address'}
-            Customer[123].set(**d)
+            (await Customer[123]).set(**d)
 
 
     .. py:method:: to_dict(only=None, exclude=None, with_collections=False, with_lazy=False, related_objects=False)
@@ -1477,7 +1477,7 @@ Entity methods
         .. code-block:: python
 
             >>> from pony.orm.examples.estore import *
-            >>> c1 = Customer[1]
+            >>> c1 = await Customer[1]
             >>> c1.to_dict()
 
             {'address': u'address 1',
@@ -1561,7 +1561,7 @@ Below is the list of upper level functions defined in Pony:
 
     .. code-block:: python
 
-        avg(o.total_price for o in Order)
+        await avg(o.total_price for o in Order)
 
     The equivalent query can be generated using the :py:meth:`~Query.avg` method.
 
@@ -1608,7 +1608,7 @@ Below is the list of upper level functions defined in Pony:
 
     .. code-block:: python
 
-        count(c for c in Customer if len(c.orders) > 2)
+        await count(c for c in Customer if len(c.orders) > 2)
 
     This query will be translated to the following SQL:
 
@@ -1632,7 +1632,7 @@ Below is the list of upper level functions defined in Pony:
 
     .. code-block:: python
 
-        delete(o for o in Order if o.status == 'CANCELLED')
+        await delete(o for o in Order if o.status == 'CANCELLED')
 
     If you need to delete objects without loading them into memory, you should use the :py:meth:`~Query.delete()` method with the parameter ``bulk=True``. In this case no hooks will be called, even if they are defined for the entity.
 
@@ -1718,7 +1718,7 @@ This function is called automatically before executing the following functions: 
 
     .. code-block:: python
 
-        get(o for o in Order if o.id == 123)
+        await get(o for o in Order if o.id == 123)
 
     The equivalent query can be generated using the :py:meth:`~Query.get` method.
 
@@ -1743,7 +1743,7 @@ This function is called automatically before executing the following functions: 
     
     .. code-block:: python
         
-        group_concat(t.title for t in Tag, sep='-')
+        await group_concat(t.title for t in Tag, sep='-')
         
     The equivalent query can be generated using the :py:meth:`~Query.group_concat()` method.
     
@@ -1777,7 +1777,7 @@ This function is called automatically before executing the following functions: 
         from pony.orm.examples.estore import *
         populate_database()
 
-        select((c, count(o)) for c in Customer for o in c.orders)[:]
+        await select((c, count(o)) for c in Customer for o in c.orders)[:]
 
     It will be translated to the following SQL:
 
@@ -1792,7 +1792,7 @@ This function is called automatically before executing the following functions: 
 
     .. code-block:: python
 
-        [(Customer[1], 2), (Customer[2], 1), (Customer[3], 1), (Customer[4], 1)]
+        [(await Customer[1], 2), (await Customer[2], 1), (await Customer[3], 1), (await Customer[4], 1)]
 
 
     But if there are customers that have no orders, they will not be selected by this query, because the condition ``WHERE "c"."id" = "o"."customer"`` doesn't find any matching record in the Order table. In order to get the list of all customers, we should use the ``left_join()`` function:
@@ -1813,13 +1813,13 @@ This function is called automatically before executing the following functions: 
 
     .. code-block:: python
 
-        [(Customer[1], 2), (Customer[2], 1), (Customer[3], 1), (Customer[4], 1), (Customer[5], 0)]
+        [(await Customer[1], 2), (await Customer[2], 1), (await Customer[3], 1), (await Customer[4], 1), (await Customer[5], 0)]
 
     We should mention that in most cases Pony can understand where LEFT JOIN is needed. For example, the same query can be written this way:
 
     .. code-block:: python
 
-        select((c, count(c.orders)) for c in Customer)[:]
+        await select((c, count(c.orders)) for c in Customer)[:]
 
     .. code-block:: sql
 
@@ -1850,7 +1850,7 @@ This function is called automatically before executing the following functions: 
 
     .. code-block:: python
 
-        max(o.date_shipped for o in Order)
+        await max(o.date_shipped for o in Order)
 
     The equivalent query can be generated using the :py:meth:`~Query.max` method.
 
@@ -1863,7 +1863,7 @@ This function is called automatically before executing the following functions: 
 
     .. code-block:: python
 
-        min(p.price for p in Product)
+        await min(p.price for p in Product)
 
     The equivalent query can be generated using the :py:meth:`~Query.min` method.
 
@@ -1909,7 +1909,7 @@ This function is called automatically before executing the following functions: 
         y = 15
         select(p for p in Person if raw_sql('p.age > $(x + y)'))
 
-        names = select(raw_sql('UPPER(p.name)') for p in Person)[:]
+        names = await select(raw_sql('UPPER(p.name)') for p in Person)[:]
         print(names)
 
         ['JOHN', 'MIKE', 'MARY']
@@ -1937,14 +1937,14 @@ This function is called automatically before executing the following functions: 
 
     .. code-block:: python
 
-        for p in select(p for p in Product):
+        async for p in select(p for p in Product):
             print p.name, p.price
 
     If you need to get a list of objects you can get a full slice of the result:
 
     .. code-block:: python
 
-        prod_list = select(p for p in Product)[:]
+        prod_list = await select(p for p in Product)[:]
 
     The ``select()`` function can also return a list of single attributes or a list of tuples:
 
@@ -2035,7 +2035,7 @@ This function is called automatically before executing the following functions: 
 
     .. code-block:: python
 
-        sum(o.total_price for o in Order)
+        await sum(o.total_price for o in Order)
 
     The equivalent query can be generated using the :py:meth:`~Query.sum` method.
 
@@ -2077,10 +2077,10 @@ The generator expression and lambda queries return an instance of the ``Query`` 
         .. code-block:: python
 
             # generator expression query
-            select(c for c in Customer)[:10]
+            await select(c for c in Customer)[:10]
 
             # lambda function query
-            Customer.select()[:10]
+            (await Customer.select())[:10]
 
         Generates the following SQL:
 
@@ -2094,7 +2094,7 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
         .. code-block:: python
 
-            select(c for c in Customer).order_by(Customer.name)[20:30]
+            await select(c for c in Customer).order_by(Customer.name)[20:30]
 
         It generates the following SQL:
 
@@ -2517,7 +2517,7 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
             @api.get('/index')
             @db_session
-            def index(req, resp):
+            async def index(req, resp):
                 ...
                 objects = select(...)
                 ...
@@ -2547,13 +2547,13 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
         .. code-block:: python
 
-            students = select(s for s in Student)[:]
+            students = await select(s for s in Student)[:]
 
         Loading students along with groups and departments:
 
         .. code-block:: python
 
-            students = select(s for s in Student).prefetch(Group, Department)[:]
+            students = await select(s for s in Student).prefetch(Group, Department)[:]
 
             for s in students: # no additional query to the DB will be sent
                 print s.name, s.group.major, s.group.dept.name
@@ -2562,7 +2562,7 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
         .. code-block:: python
 
-            students = select(s for s in Student).prefetch(Student.group, Group.dept)[:]
+            students = await select(s for s in Student).prefetch(Student.group, Group.dept)[:]
 
             for s in students: # no additional query to the DB will be sent
                 print s.name, s.group.major, s.group.dept.name
@@ -2571,7 +2571,7 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
         .. code-block:: python
 
-            students = select(s for s in Student).prefetch(Student.courses)
+            students = await select(s for s in Student).prefetch(Student.courses)
 
             for s in students:
                 print s.name
@@ -2587,7 +2587,7 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
         .. code-block:: python
 
-            select(p for p in Person if p.age > 20).random()[:10]
+            await select(p for p in Person if p.age > 20).random()[:10]
 
 
     .. py:method:: show(width=None)
@@ -2596,7 +2596,7 @@ The generator expression and lambda queries return an instance of the ``Query`` 
 
         .. code-block:: python
 
-            >>> select(p for p in Person).order_by(Person.name)[:2].show()
+            >>> await select(p for p in Person).order_by(Person.name)[:2].show()
 
             SELECT "p"."id", "p"."name", "p"."age"
             FROM "Person" "p"

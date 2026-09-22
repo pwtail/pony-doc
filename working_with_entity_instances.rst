@@ -27,9 +27,9 @@
       async with db_session:
           await delete(p for p in Product if p.price < 10)
 
-   Still synchronous-only: ``prefetch()``, ``load()`` for reverse attributes without
-   their own columns, the ``@db_session`` decorator, and schema operations (call them
-   outside a coroutine). See :ref:`async-mode`.
+   Still synchronous-only: schema operations - call :py:meth:`Database.generate_mapping`
+   and :py:meth:`Database.create_tables` outside a coroutine. See :ref:`async-mode` for the
+   full list of what works in async mode.
 
 Creating an entity instance
 ---------------------------
@@ -58,7 +58,7 @@ The simplest case is when we want to retrieve an object by its primary key. To a
 
 .. code-block:: python
 
-   customer1 = Customer[123]
+   customer1 = await Customer[123]
 
 The same syntax also works for objects with composite keys; we just need to list the elements of the composite primary key, separated by commas, in the same order that the attributes were defined in the entity class description:
 
@@ -76,7 +76,7 @@ If you want to retrieve one object not by its primary key, but by another combin
 
 .. code-block:: python
 
-   product1 = Product.get(name='Product1')
+   product1 = await Product.get(name='Product1')
 
 If no object is found, :py:meth:`~Entity.get` returns ``None``. If multiple objects are found, ``MultipleObjectsFoundError`` exception is raised.
 
@@ -107,14 +107,14 @@ The :py:meth:`~Entity.select()` method returns an instance of the :py:class:`Que
 
 .. code-block:: python
 
-    for p in Product.select(lambda p: p.price > 100):
+    async for p in Product.select(lambda p: p.price > 100):
         print(p.name, p.price)
 
 If you don't want to iterate over a query, but need just to get a list of objects, you can do so this way:
 
 .. code-block:: python
 
-    product_list = Product.select(lambda p: p.price > 100)[:]
+    product_list = (await Product.select(lambda p: p.price > 100))[:]
 
 Here we get a full slice ``[:]`` from the query. This is an equivalent of converting a query to a list:
 
@@ -203,7 +203,7 @@ It is possible to limit the number of objects returned by a query by using the :
 
 .. code-block:: python
 
-    Product.select().order_by(lambda p: desc(p.price))[:10]
+    (await Product.select()).order_by(lambda p: desc(p.price))[:10]
 
 The result of a slice is not a query object, but a final list of entity instances.
 
@@ -221,7 +221,7 @@ In Pony you can traverse object relationships:
 
 .. code-block:: python
 
-    order = Order[123]
+    order = await Order[123]
     customer = order.customer
     print customer.name
 
@@ -233,7 +233,7 @@ Traversing is possible in the "to-many" direction as well. For example, if you h
 
 .. code-block:: python
 
-    c = Customer[123]
+    c = await Customer[123]
     for order in c.orders:
         print order.state, order.price
 
@@ -247,13 +247,13 @@ For example, in order to increase the number of products by 10 with a primary ke
 
 .. code-block:: python
 
-    Product[123].quantity += 10
+    (await Product[123]).quantity += 10
 
 For changing several attributes of the same object, you can do so separately:
 
 .. code-block:: python
 
-    order = Order[123]
+    order = await Order[123]
     order.state = "Shipped"
     order.date_shipped = datetime.now()
 
@@ -261,7 +261,7 @@ or in a single line, using the :py:meth:`~Entity.set` method of an entity instan
 
 .. code-block:: python
 
-    order = Order[123]
+    order = await Order[123]
     order.set(state="Shipped", date_shipped=datetime.now())
 
 The :py:meth:`~Entity.set` method can be convenient when you need to update several object attributes at once from a dictionary:
@@ -292,7 +292,7 @@ For example, this is how we can delete an order with the primary key equal to 12
 
 .. code-block:: python
 
-    Order[123].delete()
+    (await Order[123]).delete()
 
 
 Bulk delete
@@ -302,7 +302,7 @@ Pony supports bulk delete for objects using the :py:func:`delete` function. This
 
 .. code-block:: python
 
-    delete(p for p in Product if p.category.name == 'SD Card')
+    await delete(p for p in Product if p.category.name == 'SD Card')
     #or
     Product.select(lambda p: p.category.name == 'SD Card').delete(bulk=True)
 
@@ -367,7 +367,7 @@ If you need to get the primary key value of a newly created object, you can do :
         email = Required(str)
 
     @db_session
-    def handler(email):
+    async def handler(email):
         c = Customer(email=email)
         # c.id is equal to None
         # because it is not assigned by the database yet
@@ -477,7 +477,7 @@ In order to save such a cyclic chain, you have to help Pony by adding the :py:fu
     with db_session:
         john = TeamMember(name='John')
         mary = TeamMember(name='Mary')
-        flush() # saves objects created by this moment in the database
+        await flush() # saves objects created by this moment in the database
         team = Team(name='Tenacity', team_members=[john, mary], captain=mary)
 
 In this case, Pony will save the ``john`` and ``mary`` objects in the database first and then will issue SQL UPDATE statement for building the relationship with the ``team`` object:
@@ -527,7 +527,7 @@ Pony allows pickling entity instances, query results and collections. You might 
 .. code-block:: python
 
     >>> from pony.orm.examples.estore import *
-    >>> products = select(p for p in Product if p.price > 100)[:]
+    >>> products = await select(p for p in Product if p.price > 100)[:]
     >>> products
     [Product[1], Product[2], Product[6]]
     >>> import cPickle

@@ -33,6 +33,12 @@ If you don't want to import everything into global namespace, you can import the
 
 In this case you don't load all Pony's functions into the global namespace, but it will require you to use ``orm`` as a prefix to any Pony's function and decorator.
 
+.. note::
+
+   The examples in this tutorial are written for the **asynchronous mode**: queries are
+   executed with ``await``. Top-level ``await`` works in IPython / Jupyter; in a plain
+   ``python`` REPL wrap the code in an ``async def`` and call it with ``asyncio.run(...)``.
+
 The best way to become familiar with Pony is to play around with it in interactive mode. Let's create a sample database containing the entity class ``Person``, add three objects to it, and write a query. 
 
 
@@ -176,7 +182,7 @@ Now, let's create five objects that describe three persons and two cars, and sav
     >>> p3 = Person(name='Bob', age=30)
     >>> c1 = Car(make='Toyota', model='Prius', owner=p2)
     >>> c2 = Car(make='Ford', model='Explorer', owner=p3)
-    >>> commit()
+    >>> await commit()
 
 Pony does not save objects in the database immediately. These objects will be saved only after the :py:func:`commit` function is called. If the debug mode is turned on, then during the :py:func:`commit`, you will see five ``INSERT`` commands sent to the database.
 
@@ -189,14 +195,14 @@ The code which interacts with the database has to be placed within a database se
 .. code-block:: python
 
     @db_session
-    def print_person_name(person_id):
+    async def print_person_name(person_id):
         p = Person[person_id]
         print p.name
         # database session cache will be cleared automatically
         # database connection will be returned to the pool
 
     @db_session
-    def add_car(person_id, make, model):
+    async def add_car(person_id, make, model):
         Car(make=make, model=model, owner=Person[person_id])
         # commit() will be done automatically
         # database session cache will be cleared automatically
@@ -257,7 +263,8 @@ support synchronous sessions as well:
         bio = Optional(str, lazy=True)
         cars = Set('Car')
 
-    db.generate_mapping(create_tables=True)   # schema operations are synchronous
+    db.generate_mapping(create_tables=True)   # schema operations are synchronous:
+                                              # call them before the event loop starts
 
     async def main():
         async with db_session:                 # flush + commit on exit
@@ -274,8 +281,10 @@ support synchronous sessions as well:
     import asyncio
     asyncio.run(main())
 
-:py:meth:`~Database.generate_mapping` and other schema operations are synchronous and
-must be called outside of a coroutine.
+:py:meth:`~Database.generate_mapping` and other schema operations are synchronous - call
+them before the event loop starts. Inside an async session they raise
+:py:class:`TransactionError` (the two modes cannot be mixed); a call inside a coroutine
+outside a session works, but blocks the loop.
 
 Collections are loaded explicitly as well, and after that they behave like ordinary
 Python sequences (``for``, ``len()``, ``in``, indexing):
@@ -309,6 +318,10 @@ from the pool), and objects of one task are never visible in another one.
         person = await Person[1]                    # доступ по первичному ключу
         name = await get(p.name for p in Person if p.age == 30)
 
+        persons = await select(p for p in Person).prefetch(Person.dept)   # батчами
+        for p in persons:
+            p.dept.name                             # прочитано без await
+
         await delete(p for p in Person if p.age < 18)            # удаление
         person.cars.add(car); person.cars.remove(car)            # m2m
 
@@ -318,19 +331,23 @@ from the pool), and objects of one task are never visible in another one.
 
 .. warning::
 
-   **Not supported in async mode yet.** The following stays synchronous: called inside an
-   async session it raises :py:class:`TransactionError` with a hint.
+   **What is still synchronous-only:**
 
-   * ``prefetch()``, and ``load()`` for reverse attributes which have no columns of their
-     own;
-   * lookups by raw values of composite primary key columns (``await Entity[pk]`` and
-     ``await Entity.get(...)`` work);
-   * the :py:func:`db_session` and :py:func:`transaction` decorators — use
-     ``async with db_session:`` inside a coroutine;
-   * schema operations (:py:meth:`Database.generate_mapping` and
-     :py:meth:`Database.create_tables`) executed inside a coroutine;
    * databases other than PostgreSQL and MariaDB / MySQL;
+   * schema operations (:py:meth:`Database.generate_mapping` and
+     :py:meth:`Database.create_tables`) inside an async session: they are synchronous,
+     so call them before the event loop starts (a call inside a coroutine outside a
+     session is allowed, but it blocks the loop);
+   * async generators under ``@db_session`` — wrap the iteration in
+     ``async with db_session:`` instead;
    * mixing synchronous and asynchronous sessions in one transaction.
+
+   Everything else works in async mode as well: queries, aggregates, slicing and
+   pagination, ``prefetch()``, access by primary key (``await Entity[pk]``), ``Entity.get``
+   / ``Entity.exists``, bulk deletion, many-to-many updates, ``load()`` for reverse
+   attributes, explicit ``await flush()/commit()/rollback()`` and ``@db_session`` on
+   coroutines. A synchronous operation used in an async session raises
+   :py:class:`TransactionError` with a hint.
 
 .. note::
 
@@ -366,7 +383,7 @@ The :py:func:`select` function translates the Python generator into a SQL query 
 
 .. code-block:: python
 
-    >>> select(p for p in Person if p.age > 20)[:]
+    >>> await select(p for p in Person if p.age > 20)[:]
 
     SELECT "p"."id", "p"."name", "p"."age"
     FROM "Person" "p"
@@ -380,7 +397,7 @@ For ordering the resulting list you can use the :py:meth:`Query.order_by` method
 
 .. code-block:: python
 
-    >>> select(p for p in Person).order_by(Person.name)[:2]
+    >>> await select(p for p in Person).order_by(Person.name)[:2]
 
     SELECT "p"."id", "p"."name", "p"."age"
     FROM "Person" "p"
@@ -393,7 +410,7 @@ Sometimes, when working in the interactive mode, you might want to see the value
 
 .. code-block:: python
 
-    >>> select(p for p in Person).order_by(Person.name)[:2].show()
+    >>> await select(p for p in Person).order_by(Person.name)[:2].show()
 
     SELECT "p"."id", "p"."name", "p"."age"
     FROM "Person" "p"
@@ -436,7 +453,7 @@ A query does not necessarily have to return entity objects. For example, you can
 
 .. code-block:: python
 
-    >>> select(p.name for p in Person if p.age != 30)[:]
+    >>> await select(p.name for p in Person if p.age != 30)[:]
 
     SELECT DISTINCT "p"."name"
     FROM "Person" "p"
@@ -448,7 +465,7 @@ Or a list of tuples:
 
 .. code-block:: python
 
-    >>> select((p, count(p.cars)) for p in Person)[:]
+    >>> await select((p, count(p.cars)) for p in Person)[:]
 
     SELECT "p"."id", COUNT(DISTINCT "car-1"."id")
     FROM "Person" "p"
@@ -464,7 +481,7 @@ With Pony you can also run aggregate queries. Here is an example of a query whic
 
 .. code-block:: python
 
-    >>> print max(p.age for p in Person)
+    >>> print await max(p.age for p in Person)
     SELECT MAX("p"."age")
     FROM "Person" "p"
 
@@ -480,7 +497,7 @@ To get an object by its primary key you need to specify the primary key value in
 
 .. code-block:: python
 
-    >>> p1 = Person[1]
+    >>> p1 = await Person[1]
     >>> print p1.name
     John
 
@@ -490,7 +507,7 @@ For retrieving the objects by other attributes, you can use the :py:meth:`Entity
 
 .. code-block:: python
 
-    >>> mary = Person.get(name='Mary')
+    >>> mary = await Person.get(name='Mary')
 
     SELECT "id", "name", "age"
     FROM "Person"
@@ -520,7 +537,7 @@ Updating an object
 .. code-block:: python
 
     >>> mary.age += 1
-    >>> commit()
+    >>> await commit()
 
 Pony keeps track of all changed attributes. When the :py:func:`commit` function is executed, all objects that were updated during the current transaction will be saved in the database. Pony saves only those attributes, that were changed during the database session.
 
@@ -533,7 +550,7 @@ If you need to select entities by a raw SQL query, you can do it this way:
 .. code-block:: python
 
     >>> x = 25
-    >>> Person.select_by_sql('SELECT * FROM Person p WHERE p.age < $x')
+    >>> await Person.select_by_sql('SELECT * FROM Person p WHERE p.age < $x')
 
     SELECT * FROM Person p WHERE p.age < ?
     [25]
@@ -545,7 +562,7 @@ If you want to work with the database directly, avoiding entities, you can use t
 .. code-block:: python
 
     >>> x = 20
-    >>> db.select('name FROM Person WHERE age > $x')
+    >>> await db.select('name FROM Person WHERE age > $x')
     SELECT name FROM Person WHERE age > ?
     [20]
 

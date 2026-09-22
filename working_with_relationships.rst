@@ -25,7 +25,7 @@ Working with entity relationships
    The two rules of async sessions - collections return seeds, and an object with
    collections must have them loaded before deletion - are described in
    :ref:`async-mode`, together with the list of features which are still
-   synchronous-only (``prefetch()`` among them).
+   the current limitations of async mode.
 
 In Pony, an entity can relate to other entities through relationship attributes. Each relationship always has two ends, and is defined by two entity attributes:
 
@@ -65,7 +65,7 @@ Now let's create instances of ``Person`` and ``Car`` entities:
 
     >>> p1 = Person(name='John')
     >>> c1 = Car(make='Toyota', model='Camry')
-    >>> commit()
+    >>> await commit()
 
 Normally, in your program, you don't need to call the function :py:func:`commit` manually, because it should be called automatically by the :py:func:`db_session`. But when you work in the interactive mode, you never leave a :py:func:`db_session`, that is why we need to commit manually if we want to store data in the database.
 
@@ -123,11 +123,12 @@ You can add or remove relationships using the :py:meth:`Set.add` and :py:meth:`S
 
 .. code-block:: python
 
-    >>> p1.cars.remove(Car[1])
+    >>> await p1.cars
+    >>> p1.cars.remove(await Car[1])
     >>> print p1.cars
     CarSet([])
 
-    >>> p1.cars.add(Car[1])
+    >>> p1.cars.add(await Car[1])
     >>> print p1.cars
     CarSet([Car[1]])
 
@@ -135,20 +136,23 @@ You can check if a collection contains an element:
 
 .. code-block:: python
 
-    >>> Car[1] in p1.cars
+    >>> await p1.cars
+    >>> (await Car[1]) in p1.cars
     True
 
 Or make sure that there is no such element in the collection:
 
 .. code-block:: python
 
-    >>> Car[1] not in p1.cars
+    >>> await p1.cars
+    >>> (await Car[1]) not in p1.cars
     False
 
 Check the collection length:
 
 .. code-block:: python
 
+    >>> await p1.cars
     >>> len(p1.cars)
     1
 
@@ -157,7 +161,7 @@ If you need to create an instance of a car and assign it with a particular perso
 .. code-block:: python
 
     >>> p1.cars.create(model='Toyota', make='Prius')
-    >>> commit()
+    >>> await commit()
 
 Now we can check that a new ``Car`` instance was added to the ``Person.cars`` collection attribute of our instance:
 
@@ -172,6 +176,7 @@ You can iterate over a collection attribute:
 
 .. code-block:: python
 
+    >>> await p1.cars
     >>> for car in p1.cars:
     ...     print car.model
 
@@ -194,7 +199,7 @@ In Pony, the collection attributes provides the attribute lifting capability: th
         make = Required(str)
         model = Required(str)
         owner = Optional(Person)
-    >>> p1 = Person[1]
+    >>> p1 = await Person[1]
     >>> print p1.cars.model
     Multiset({u'Camry': 1, u'Prius': 1})
 
@@ -211,6 +216,7 @@ We can iterate over the multiset:
 
 .. code-block:: python
 
+    >>> await p1.cars
     >>> for m in p1.cars.make:
     ...     print m
     ...
@@ -265,7 +271,7 @@ The example below selects all students with the ``gpa`` greater than 3 within th
 
 .. code-block:: python
 
-    g = Group[101]
+    g = await Group[101]
     g.students.filter(lambda student: student.gpa > 3)[:]
 
 This query can be used for displaying the second page of group 101 student's list ordered by the ``name`` attribute:
@@ -290,6 +296,6 @@ And one more example. This query returns the first page of courses which were ta
 
 .. code-block:: python
 
-    s = Student[1]
+    s = await Student[1]
     s.courses.select(lambda c: c.semester == 2).order_by(Course.name).page(1)
 

@@ -92,7 +92,7 @@ You can read a JSON attribute as any other entity attribute:
 
 .. code-block:: python
 
-   >>> Product[1].info
+   >>> (await Product[1]).info
    {'battery': 3600, '3.5mm jack': True, 'colors': ['Black', 'Grey', 'Gold'],
    'display': 5.5}
 
@@ -100,13 +100,13 @@ Once JSON attribute is extracted from the database, it is deserialized and repre
 
 .. code-block:: python
 
-   >>> Product[1].info['colors']
+   >>> (await Product[1]).info['colors']
    ['Black', 'Grey', 'Gold']
 
-   >>> Product[1].info['colors'][0]
+   >>> (await Product[1]).info['colors'][0]
    'Black'
 
-   >>> 'Black' in Product[1].info['colors']
+   >>> 'Black' in (await Product[1]).info['colors']
    True
 
 
@@ -117,8 +117,8 @@ For modifying the JSON attribute value, you use the standard Python list and dic
 
 .. code-block:: python
 
-   >>> Product[1].info['colors'].append('Silver')
-   >>> Product[1].info['colors']
+   >>> (await Product[1]).info['colors'].append('Silver')
+   >>> (await Product[1]).info['colors']
    ['Black', 'Grey', 'Gold', 'Silver']
 
 Now, on commit, the changes will be stored in the database. In order to track the changes made in the JSON structure, Pony uses its own dict and list implementations which inherit from the standard Python dict and list.
@@ -127,7 +127,7 @@ Below is a couple more examples of how you can modify the the JSON value.
 
 .. code-block:: python
 
-   p = Product[1]
+   p = await Product[1]
 
    # assigning a new value
    p.info['display']['size'] = 4.7

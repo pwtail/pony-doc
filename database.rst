@@ -4,8 +4,9 @@
 .. note::
 
    Everything on this page — :py:meth:`Database.bind`, :py:meth:`Database.generate_mapping`
-   and :py:meth:`Database.select` — is synchronous, and in async applications it is
-   called outside of a coroutine. Asynchronous sessions require an asynchronous provider:
+   and :py:meth:`Database.select` — is synchronous: in async applications these calls are
+   made before the event loop starts (inside an async session they raise
+   :py:class:`TransactionError`, because the two modes cannot be mixed). Asynchronous sessions require an asynchronous provider:
    ``postgres_async`` (PostgreSQL) or ``mariadb_async`` (MariaDB / MySQL), which support
    synchronous sessions as well. See :ref:`async-mode`.
 
@@ -141,19 +142,19 @@ With Pony you can easily pass parameters into SQL queries. In order to specify a
 .. code-block:: python
 
     x = "John"
-    data = db.select("select * from Person where name = $x")
+    data = await db.select("select * from Person where name = $x")
 
 When Pony encounters such a parameter within the SQL query it gets the variable value from the current frame (from globals and locals) or from the dictionary which is passed as the second parameter. In the example above Pony will try to get the value for ``$x`` from the variable ``x`` and will pass this value as a parameter to the SQL query which eliminates the risk of SQL injection. Below you can see how to pass a dictionary with the parameters:
 
 .. code-block:: python
 
-    data = db.select("select * from Person where name = $x", {"x" : "Susan"})
+    data = await db.select("select * from Person where name = $x", {"x" : "Susan"})
 
 This method of passing parameters to the SQL queries is very flexible and allows using not only single variables, but any Python expression. In order to specify an expression you need to put it in parentheses after the $ sign:
 
 .. code-block:: python
 
-    data = db.select("select * from Person where name = $(x.lower()) and age > $(y + 2)")
+    data = await db.select("select * from Person where name = $(x.lower()) and age > $(y + 2)")
 
 
 All the parameters can be passed into the query using the Pony unified way, independently of the DBAPI provider, using the ``$`` sign. In the example above we pass ``name`` and ``age`` parameters into the query.
@@ -165,7 +166,7 @@ It is possible to have a Python expressions inside the query text, for example:
     x = 10
     a = 20
     b = 30
-    db.execute("SELECT * FROM Table1 WHERE column1 = $x and column2 = $(a + b)")
+    await db.execute("SELECT * FROM Table1 WHERE column1 = $x and column2 = $(a + b)")
 
 If you need to use the $ sign as a string literal inside the query, you need to escape it using another $ (put two $ signs in succession: $$).
 

@@ -60,14 +60,14 @@ Select specific item of array
 
 .. code-block:: python
 
-    select(p.tags[2] for p in Product)[:]  # third element
-    select(p.tags[-1] for p in Product)[:]  # last element
+    await select(p.tags[2] for p in Product)[:]  # third element
+    await select(p.tags[-1] for p in Product)[:]  # last element
 
 Using slice
 
 .. code-block:: python
 
-    select(p.tags[:5] for p in Product)[:]  # first five elements
+    await select(p.tags[:5] for p in Product)[:]  # first five elements
 
 .. note::
     Steps are not supported for slices.
@@ -76,8 +76,8 @@ Check if item or list of items in or not in array
 
 .. code-block:: python
 
-    select(p for p in Product if 'apple' in p.tags)[:]
-    select(p for p in Product if ['LCD', 'DVD', 'SSD'] in p.tags)[:]
+    await select(p for p in Product if 'apple' in p.tags)[:]
+    await select(p for p in Product if ['LCD', 'DVD', 'SSD'] in p.tags)[:]
 
 
 Change array's items

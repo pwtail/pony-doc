@@ -24,9 +24,9 @@
 
    Access by primary key works too - ``await Entity[pk]`` (the identity map of the
    session is checked first, then a query is sent; composite keys as well:
-   ``await OrderItem[order, product]``). Still synchronous-only: ``prefetch()``,
-   ``load()`` for reverse attributes without their own columns, and the ``@db_session``
-   decorator. See :ref:`async-mode`.
+   ``await OrderItem[order, product]``). ``prefetch()`` works in async mode as well —
+   related objects are loaded in batches. See :ref:`async-mode` for the current
+   limitations.
 
 Pony provides a very convenient way to query the database using the generator expression syntax. Pony allows programmers to work with objects which are stored in a database as if they were stored in memory, using native Python syntax. It makes development much easier.
 
@@ -187,14 +187,14 @@ When you import this example, it will create the SQLite database in the file 'es
     select((c.country, count(c)) for c in Customer)
 
     # Max product price
-    max(p.price for p in Product)
+    await max(p.price for p in Product)
 
     # Max SSD price
-    max(p.price for p in Product
+    await max(p.price for p in Product
                 for cat in p.categories if cat.name == 'Solid State Drives')
 
     # Three most expensive products
-    Product.select().order_by(desc(Product.price))[:3]
+    (await Product.select()).order_by(desc(Product.price))[:3]
 
     # Out of stock products
     Product.select(lambda p: p.quantity == 0)
@@ -209,7 +209,7 @@ When you import this example, it will create the SQLite database in the file 'es
     Customer.select(lambda c: count(c.orders) > 1)
 
     # Three most valuable customers
-    Customer.select().order_by(lambda c: desc(sum(c.orders.total_price)))[:3]
+    (await Customer.select()).order_by(lambda c: desc(sum(c.orders.total_price)))[:3]
 
     # Customers whose orders were shipped
     Customer.select(lambda c: SHIPPED in c.orders.state)
@@ -247,7 +247,7 @@ If the expression can be calculated in Python, Pony will pass the result of the 
 
 .. code-block:: python
 
-    select(o for o in Order if o.date_created >= datetime.now() - timedelta(days=3))[:]
+    await select(o for o in Order if o.date_created >= datetime.now() - timedelta(days=3))[:]
 
 .. code-block:: sql
 
@@ -260,7 +260,7 @@ If the operation needs to be performed with the attribute, we cannot calculate i
 
 .. code-block:: python
 
-    select(o for o in Order if o.date_created + timedelta(days=3) >= datetime.now())[:]
+    await select(o for o in Order if o.date_created + timedelta(days=3) >= datetime.now())[:]
 
 .. code-block:: sql
 
@@ -441,7 +441,7 @@ Examples:
 .. code-block:: python
 
     select(o for o in Order if o.customer in
-           select(c for c in Customer if c.name.startswith('A')))[:]
+           await select(c for c in Customer if c.name.startswith('A')))[:]
 
 .. code-block:: sql
 
@@ -579,7 +579,7 @@ The :py:func:`raw_sql` function can be used not only in the condition part, but 
 
 .. code-block:: python
 
-    names = select(raw_sql('UPPER(p.name)') for p in Person)[:]
+    names = await select(raw_sql('UPPER(p.name)') for p in Person)[:]
     print(names)
 
     ['JOHN', 'MIKE', 'MARY']
@@ -589,7 +589,7 @@ But when you return data using the :py:func:`raw_sql` function, you might need t
 
 .. code-block:: python
 
-    dates = select(raw_sql('(p.dob)') for p in Person)[:]
+    dates = await select(raw_sql('(p.dob)') for p in Person)[:]
     print(dates)
 
     ['1985-01-01', '1983-05-20', '1995-02-15']
@@ -599,7 +599,7 @@ If you want to get the result as a list of dates, you need to specify the ``resu
 
 .. code-block:: python
 
-    dates = select(raw_sql('(p.dob)', result_type=date) for p in Person)[:]
+    dates = await select(raw_sql('(p.dob)', result_type=date) for p in Person)[:]
     print(dates)
 
     [datetime.date(1986, 1, 1), datetime.date(1984, 5, 20), datetime.date(1996, 2, 15)]
@@ -669,7 +669,7 @@ Although Pony can translate almost any condition written in Python to SQL, somet
 
 .. code-block:: python
 
-    Product.select_by_sql("SELECT * FROM Products")
+    await Product.select_by_sql("SELECT * FROM Products")
 
 Unlike the method :py:meth:`Entity.select`, the method :py:meth:`Entity.select_by_sql` does not return the :py:class:`Query` object, but a list of entity instances.
 
@@ -679,13 +679,13 @@ Parameters are passed using the following syntax: "$name_variable" or "$(express
 
     x = 1000
     y = 500
-    Product.select_by_sql("SELECT * FROM Product WHERE price > $x OR price = $(y * 2)")
+    await Product.select_by_sql("SELECT * FROM Product WHERE price > $x OR price = $(y * 2)")
 
 When Pony encounters a parameter within a raw SQL query, it gets the variable value from the current frame (from globals and locals) or from the dictionaries which can be passed as parameters:
 
 .. code-block:: python
 
-    Product.select_by_sql("SELECT * FROM Product WHERE price > $x OR price = $(y * 2)",
+    await Product.select_by_sql("SELECT * FROM Product WHERE price > $x OR price = $(y * 2)",
                            globals={'x': 100}, locals={'y': 200})
 
 Variables and more complex expressions specified after the ``$`` sign, will be automatically calculated and transferred into the query as parameters, which makes SQL-injection impossible. Pony automatically replaces $x in the query string with "?", "%S" or with other paramstyle, used in your database.

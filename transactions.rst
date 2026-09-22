@@ -19,8 +19,10 @@ Transactions and db_session
           await commit()       # or: await rollback()
 
    There are also explicit ``async_flush`` / ``async_commit`` / ``async_rollback`` names.
-   The ``@db_session`` and ``@transaction`` decorators are synchronous-only - use
-   ``async with db_session:`` in a coroutine. See :ref:`async-mode`.
+   The :py:func:`db_session` decorator works on coroutines as well: it opens a session per
+   call, commits on return, rolls back if the coroutine raises, and supports ``retry`` /
+   ``retry_exceptions`` (async generators are not supported — wrap them in
+   ``async with db_session:``). See :ref:`async-mode`.
 
 A database transaction is a logical unit of work, which can consist of one or several queries. Transactions are atomic, which means that when a transaction makes changes to the database, either all the changes succeed when the transaction is committed, or all the changes are undone when the transaction is rolled back.
 
@@ -44,7 +46,7 @@ Example of using the :py:func:`@db_session` decorator:
 .. code-block:: python
 
     @db_session
-    def check_user(username):
+    async def check_user(username):
         return User.exists(username=username)
 
 Example of using the :py:func:`db_session` context manager:
@@ -54,7 +56,7 @@ Example of using the :py:func:`db_session` context manager:
     def process_request():
         ...
         with db_session:
-            u = User.get(username=username)
+            u = (await User.get(username=username))
             ...
 
 .. note::
@@ -85,9 +87,9 @@ A transaction ends when it is committed or rolled back using ``commit()`` or ``r
 .. code-block:: python
 
     @db_session
-    def func():
+    async def func():
         # a new transaction is started
-        p = Product[123]
+        p = await Product[123]
         p.price += 10
         # commit() will be done automatically
         # database session cache will be cleared automatically
@@ -102,11 +104,11 @@ If you need to have more than one transaction within the same database session y
 .. code-block:: python
 
     @db_session
-    def func1():
-        p1 = Product[123]
+    async def func1():
+        p1 = await Product[123]
         p1.price += 10
-        commit()          # the first transaction is committed
-        p2 = Product[456] # a new transaction is started
+        await commit()          # the first transaction is committed
+        p2 = await Product[456] # a new transaction is started
         p2.price -= 10
 
 
@@ -152,7 +154,7 @@ In other words, don't do this:
 
     def my_generator(x):
         with db_session: # it won't work here!
-            obj = MyEntity.get(id=x)
+            obj = await MyEntity.get(id=x)
             yield obj
 
 Do this instead:
@@ -160,8 +162,8 @@ Do this instead:
 .. code-block:: python
 
     @db_session
-    def my_generator( x ):
-        obj = MyEntity.get(id=x)
+    async def my_generator( x ):
+        obj = await MyEntity.get(id=x)
         yield obj
 
 With regular functions, the :py:func:`@db_session` decorator works as a scope. When your program leaves the :py:func:`db_session` scope, Pony finishes the transaction by performing commit (or rollback) and clears the db_session cache.
@@ -206,7 +208,7 @@ Pony can work with several databases simultaneously. In the example below we use
     db2.bind('mysql', ...)
 
     @db_session
-    def do_something(user_id, address_id):
+    async def do_something(user_id, address_id):
         u = User[user_id]
         a = Address[address_id]
         ...
@@ -337,7 +339,7 @@ The SERIALIZABLE approach:
 .. code-block:: python
 
     @db_session(serializable=True)
-    def transfer_money(account_id1, account_id2, amount):
+    async def transfer_money(account_id1, account_id2, amount):
         account1 = Account[account_id1]
         account2 = Account[account_id2]
         if amount > account1.amount:
@@ -351,7 +353,7 @@ The SELECT FOR UPDATE approach:
 .. code-block:: python
 
     @db_session
-    def transfer_money(account_id1, account_id2, amount):
+    async def transfer_money(account_id1, account_id2, amount):
         account1 = Account.get_for_update(id=account_id1)
         account2 = Account.get_for_update(id=account_id2)
         if amount > account1.amount:
@@ -364,7 +366,7 @@ The optimistic check approach:
 .. code-block:: python
 
     @db_session
-    def transfer_money(account_id1, account_id2, amount):
+    async def transfer_money(account_id1, account_id2, amount):
         account1 = Account[account_id1]
         account2 = Account[account_id2]
         if amount > account1.amount:

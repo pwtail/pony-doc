@@ -21,7 +21,7 @@
 
       async with db_session:
           students = await select(s for s in Student if s.group.number == 101)
-          average = sum(s.gpa for s in students) / len(students)
+          average = await sum(s.gpa for s in students) / len(students)
 
    See :ref:`async-mode`.
 
@@ -31,37 +31,37 @@ Total GPA of students from group 101:
 
 .. code-block:: python
 
-	sum(s.gpa for s in Student if s.group.number == 101)
+ await sum(s.gpa for s in Student if s.group.number == 101)
 
 Number of students with a GPA above three:
 
 .. code-block:: python
 
-	count(s for s in Student if s.gpa > 3)
+ await count(s for s in Student if s.gpa > 3)
 
 First name of a student, who studies philosophy, sorted alphabetically:
 
 .. code-block:: python
 
-	min(s.name for s in Student if "Philosophy" in s.courses.name)
+ await min(s.name for s in Student if "Philosophy" in s.courses.name)
 
 Birth date of the youngest student in group 101:
 
 .. code-block:: python
 
-	max(s.dob for s in Student if s.group.number == 101)
+ await max(s.dob for s in Student if s.group.number == 101)
 
 Average GPA in department 44:
 
 .. code-block:: python
 
-	avg(s.gpa for s in Student if s.group.dept.number == 44)
+ await avg(s.gpa for s in Student if s.group.dept.number == 44)
     
 Names of students of group 101 joined by comma:
 
 .. code-block:: python
 
-    group_concat(s.name for s in Student if s.group.number == 101)
+    await group_concat(s.name for s in Student if s.group.number == 101)
 
 
 .. note:: Although Python already has the standard functions ``sum()``, ``count()``, ``min()``, and ``max()``, Pony adds its own functions under the same names. Also, Pony adds its own :py:func:`avg` and :py:func:`group_concat` functions. These functions are implemented in the ``pony.orm`` module and they can be imported from there either "by the star", or by its name.
@@ -151,7 +151,7 @@ Aggregate queries often need to calculate the quantity of something. Here is how
 
 .. code-block:: python
 
-    count(s for s in Student if s.group.number == 101)
+    await count(s for s in Student if s.group.number == 101)
 
 The number of students in each group related to the department 44:
 
